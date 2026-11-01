@@ -1,0 +1,36 @@
+name: Pages only
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: write
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build web
+        working-directory: ./macless_haystack
+        run: |
+          flutter pub get
+          flutter build web --profile --base-href "/macless-haystack/"
+      - name: Deploy to Github Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ./macless_haystack/build/web
+          branch: gh-pages
+          clean: true
