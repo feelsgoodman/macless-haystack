@@ -3,7 +3,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:macless_haystack/item_management/item_creation.dart';
 import 'package:macless_haystack/item_management/item_file_import.dart';
+import 'package:macless_haystack/item_management/item_html_file_import.dart';
 import 'package:macless_haystack/item_management/item_import.dart';
+import 'package:macless_haystack/item_management/item_paste_import.dart';
 import 'dart:io';
 
 class NewKeyAction extends StatelessWidget {
@@ -74,6 +76,29 @@ class NewKeyAction extends StatelessWidget {
                         }
                       }
                     }
+                  },
+                ),
+                ListTile(
+                  title: const Text('Import from JSON File (Browser)'),
+                  leading: const Icon(Icons.file_upload),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              const ItemHtmlFileImport()),
+                    );
+                  },
+                ),
+                ListTile(
+                  title: const Text('Paste JSON'),
+                  leading: const Icon(Icons.content_paste),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ItemPasteImport()),
+                    );
                   },
                 ),
                 ListTile(
