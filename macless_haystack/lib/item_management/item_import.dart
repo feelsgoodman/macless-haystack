@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:macless_haystack/accessory/accessory_model.dart';
 import 'package:macless_haystack/accessory/accessory_registry.dart';
 import 'package:macless_haystack/findMy/find_my_controller.dart';
+import 'package:macless_haystack/item_management/accessory_additional_keys_input.dart';
 import 'package:macless_haystack/item_management/accessory_color_input.dart';
 import 'package:macless_haystack/item_management/accessory_icon_input.dart';
 import 'package:macless_haystack/item_management/accessory_id_input.dart';
@@ -29,10 +30,30 @@ class _AccessoryImportState extends State<AccessoryImport> {
       lastBatteryStatus: null,
       additionalKeys: List.empty());
   String privateKey = '';
+  String additionalKeysText = '';
 
   final _formKey = GlobalKey<FormState>();
 
-  /// Imports the private key to the key store.
+  /// Parses the additional-keys text field: one Base64 private key per
+  /// line, ignoring blank lines. Duplicates of the primary key are
+  /// dropped, since that key is already stored as the primary key.
+  List<String> _parseAdditionalKeys() {
+    final seen = <String>{privateKey};
+    final keys = <String>[];
+    for (final line in additionalKeysText.split('\n')) {
+      final key = line.trim().replaceAll('\\', '');
+      if (key.isEmpty || seen.contains(key)) {
+        continue;
+      }
+      seen.add(key);
+      keys.add(key);
+    }
+    return keys;
+  }
+
+  /// Imports the private key and any additional (rotation) private keys
+  /// to the key store. Like the file import, additional keys are stored
+  /// on the accessory as their hashed public keys.
   Future<void> importKey(BuildContext context) async {
     if (_formKey.currentState != null) {
       if (_formKey.currentState!.validate()) {
@@ -40,6 +61,14 @@ class _AccessoryImportState extends State<AccessoryImport> {
         try {
           var keyPair = await FindMyController.importKeyPair(privateKey);
           newAccessory.hashedPublicKey = keyPair.hashedPublicKey;
+
+          final additionalHashedKeys = <String>[];
+          for (final additionalKey in _parseAdditionalKeys()) {
+            final additionalKeyPair =
+                await FindMyController.importKeyPair(additionalKey);
+            additionalHashedKeys.add(additionalKeyPair.hashedPublicKey);
+          }
+          newAccessory.additionalKeys = additionalHashedKeys;
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -49,9 +78,8 @@ class _AccessoryImportState extends State<AccessoryImport> {
               ),
             );
           }
+          return;
         }
-        var keyPair = await FindMyController.importKeyPair(privateKey);
-        newAccessory.hashedPublicKey = keyPair.hashedPublicKey;
 
         if (context.mounted) {
           AccessoryRegistry accessoryRegistry =
@@ -117,6 +145,13 @@ class _AccessoryImportState extends State<AccessoryImport> {
                       privateKey = privateKeyVal;
                     });
                   }
+                },
+              ),
+              AccessoryAdditionalKeysInput(
+                changeListener: (String? additionalKeysVal) {
+                  setState(() {
+                    additionalKeysText = additionalKeysVal ?? '';
+                  });
                 },
               ),
               SwitchListTile(
